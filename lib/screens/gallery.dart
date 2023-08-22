@@ -1,8 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_gallery/Utilities/Utilites.dart';
+import 'package:image_gallery/components/image_details.dart';
 import 'package:image_gallery/models/image.dart';
+import 'package:image_gallery/providers/imageProvider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class Gallery extends StatefulWidget {
   const Gallery({super.key});
@@ -12,20 +16,71 @@ class Gallery extends StatefulWidget {
 }
 
 class _GalleryState extends State<Gallery> {
-  final List<ImageItem> _images = [];
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  void _addGalleryImage() async {
+  final TextEditingController _nameFieldController = TextEditingController();
+
+  void _editImageNameAndSaveDialog(ImageItem imageItem) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: <Widget>[
+                  Image.memory(imageItem.bytes),
+                  TextFormField(
+                    controller: _nameFieldController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                    ),
+                    validator: (String? value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter image name';
+                      }
+                      return null;
+                    },
+                  ),
+                  ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          ImageItem editedImageItem = ImageItem(
+                              imageItem.imagePath,
+                              _nameFieldController.text,
+                              imageItem.bytes,
+                              imageItem.size);
+                          Provider.of<ImagesProvider>(context, listen: false)
+                              .addImage(editedImageItem);
+                          _nameFieldController.clear();
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: const Text("Save Image"))
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<ImageItem?> _pickImageGallery() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       String filePath = pickedFile.path;
       String fileName = pickedFile.name;
       Uint8List bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _images.add(ImageItem(filePath, fileName, bytes));
-      });
+      String size = Utilites.getFileSizeString(bytes: bytes.length);
+      ImageItem imageItem = ImageItem(filePath, fileName, bytes, size);
+      return imageItem;
     } else {
       // Cancelled action
+      return null;
     }
   }
 
@@ -36,34 +91,66 @@ class _GalleryState extends State<Gallery> {
         title: const Text("Gallery"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              mainAxisSpacing: 0, crossAxisSpacing: 0, crossAxisCount: 2),
-          itemCount: _images.length,
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () {
-                _showImageDialog(context, _images[index].bytes);
-              },
-              child: Image.memory(_images[index].bytes),
-            );
-          }),
+      body: ListView.builder(
+        itemCount: Provider.of<ImagesProvider>(context).getImages.length,
+        itemBuilder: (context, index) {
+          final imageItem =
+              Provider.of<ImagesProvider>(context).getImages[index];
+          return Dismissible(
+              key: Key("imageItem $index"),
+              direction: DismissDirection.endToStart,
+              onDismissed: (direction) => {
+                    setState(() {
+                      Provider.of<ImagesProvider>(context, listen: false)
+                          .deleteImage(index);
+                    })
+                  },
+              background: Container(
+                color: Colors.red,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                child: const Icon(Icons.delete),
+              ),
+              child: GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return Dialog(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.elliptical(5, 5))
+                          ),
+                          child: ImageDetails(imageItem),
+                        );
+                      } 
+                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => ImageDetails(imageItem)),
+                    // );
+                    // _showImageDialog(context, imageItem.bytes);
+                  },
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      radius: 56, // Image radius
+                      backgroundImage: MemoryImage(imageItem.bytes),
+                    ),
+                    title: Text(imageItem.name),
+                    subtitle: Text(imageItem.size),
+                  )));
+        },
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addGalleryImage,
+        // onPressed: _addGalleryImage,
+        onPressed: () async {
+          ImageItem? imgItem = await _pickImageGallery();
+          if (imgItem != null) {
+            _editImageNameAndSaveDialog(imgItem);
+          }
+        },
         tooltip: 'Add image',
         child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  void _showImageDialog(BuildContext context, Uint8List bytes) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Image.memory(bytes),
-        );
-      },
     );
   }
 }
