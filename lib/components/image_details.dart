@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:image_gallery/models/image.dart';
+import 'package:image_gallery/models/image_item.dart';
 
 class ImageDetails extends StatelessWidget {
   final ImageItem _imageItem;
@@ -10,25 +10,20 @@ class ImageDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(25),
-      // decoration: BoxDecoration(
-      //   color: Theme.of(context).colorScheme.background
-      // ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
             onTap: () {
               Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (context) {
-                    return Dialog.fullscreen(
-                      backgroundColor: Colors.black,
-                      child: Image.memory(_imageItem.bytes),
-                    );
-                  }
-                  ),
+                context,
+                MaterialPageRoute(builder: (context) {
+                  return Dialog.fullscreen(
+                    backgroundColor: Colors.black,
+                    child: Image.memory(_imageItem.bytes),
                   );
+                }),
+              );
             },
             child: Image.memory(_imageItem.bytes),
           ),

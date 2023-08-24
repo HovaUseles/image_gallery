@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_gallery/Utilities/Utilites.dart';
 import 'package:image_gallery/components/image_details.dart';
-import 'package:image_gallery/models/image.dart';
+import 'package:image_gallery/models/image_item.dart';
 import 'package:image_gallery/providers/imageProvider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +20,7 @@ class _GalleryState extends State<Gallery> {
 
   final TextEditingController _nameFieldController = TextEditingController();
 
+  /// Opens up a editor in a dialog window where the user can input the name of the image.
   void _editImageNameAndSaveDialog(ImageItem imageItem) {
     showDialog(
       context: context,
@@ -68,6 +69,7 @@ class _GalleryState extends State<Gallery> {
     );
   }
 
+  /// Opens the image picker and returns the picked image if any
   Future<ImageItem?> _pickImageGallery() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -97,51 +99,47 @@ class _GalleryState extends State<Gallery> {
           final imageItem =
               Provider.of<ImagesProvider>(context).getImages[index];
           return Dismissible(
-              key: Key("imageItem $index"),
-              direction: DismissDirection.endToStart,
-              onDismissed: (direction) => {
-                    setState(() {
-                      Provider.of<ImagesProvider>(context, listen: false)
-                          .deleteImage(index);
-                    })
-                  },
-              background: Container(
-                color: Colors.red,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                child: const Icon(Icons.delete),
-              ),
-              child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return Dialog(
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.elliptical(5, 5))
-                          ),
-                          child: ImageDetails(imageItem),
-                        );
-                      } 
+            key: Key("imageItem $index"),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) => {
+              setState(() {
+                Provider.of<ImagesProvider>(context, listen: false)
+                    .deleteImage(index);
+              })
+            },
+            background: Container(
+              color: Colors.red,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete),
+            ),
+            child: GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Dialog(
+                      shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.elliptical(5, 5))),
+                      child: ImageDetails(imageItem),
                     );
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(builder: (context) => ImageDetails(imageItem)),
-                    // );
-                    // _showImageDialog(context, imageItem.bytes);
                   },
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      radius: 56, // Image radius
-                      backgroundImage: MemoryImage(imageItem.bytes),
-                    ),
-                    title: Text(imageItem.name),
-                    subtitle: Text(imageItem.size),
-                  )));
+                );
+              },
+              child: ListTile(
+                leading: CircleAvatar(
+                  radius: 56, // Image radius
+                  backgroundImage: MemoryImage(imageItem.bytes),
+                ),
+                title: Text(imageItem.name),
+                subtitle: Text(imageItem.size),
+              ),
+            ),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        // onPressed: _addGalleryImage,
         onPressed: () async {
           ImageItem? imgItem = await _pickImageGallery();
           if (imgItem != null) {

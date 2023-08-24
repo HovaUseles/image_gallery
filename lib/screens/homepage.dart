@@ -51,6 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and  use it to set our appbar title.
         title: Text(widget.title),
       ),
+      // Creating sidebar menu
       drawer: Drawer(
         child: ListView(
           // Remove padding from list view

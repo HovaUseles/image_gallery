@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Dialog widget for displaying image in fullscreen
 class ImageDialog extends StatelessWidget {
   const ImageDialog({super.key});
 
